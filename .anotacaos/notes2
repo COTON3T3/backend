@@ -1,0 +1,255 @@
+bin/cake server -H 0.0.0.0 -p 8765
+Invoke-RestMethod -Uri "http://localhost:8765/logar" -Method POST -Headers @{ "Content-Type" = "application/json" } -Body '{ "email": "lucassilvabatista599@gmail.com", "password": "123456" }'
+
+
+curl -X POST http://192.168.1.41:8765/logar -H "Content-Type: application/json" -d "{\"email\":\"lucassilvabatista599@gmail.com\",\"password\":\"123456\"}"
+
+1. Importação de dados exportados do Minha Frota (CSV, Excel, JSON)
+    Criar um endpoint na API para upload de arquivos (CSV, Excel, JSON).
+    O backend processa o arquivo, valida os dados (formatos, campos obrigatórios, duplicidades) e insere/atualiza os registros nas tabelas correspondentes (veículos, manutenções, peças, etc).
+    Exemplo: POST /api/importar-dados
+    Retornar relatório de sucesso/erros da importação.
+
+2. Consulta rápida por placa para visualizar histórico do veículo
+    Endpoint que recebe a placa como parâmetro e retorna o histórico completo do veículo (manutenções, peças trocadas, documentos, etc).
+    Exemplo: GET /api/veiculos/{placa}/historico
+    Implementar busca eficiente (índice no campo placa) e retornar dados organizados por data.
+
+    Histórico de manutenções por placa:
+            SELECT
+                v.placa,
+                v.modelo,
+                v.ano,
+                m.data,
+                m.tipo,
+                m.descricao,
+                f.nome AS fornecedor,
+                m.valor AS valor_total
+            FROM veiculos v
+            JOIN manutencaos m ON v.id = m.veiculo_id
+            JOIN fornecedors f ON m.fornecedor_id = f.id
+            WHERE v.placa = :placa
+            ORDER BY m.data DESC;
+
+    Peças trocadas em cada manutenção:
+        SELECT
+            m.id AS manutencao_id,
+            p.nome,
+            mp.quantidade,
+            mp.valor_unitario
+            FROM manutencaos m
+        JOIN manupecas mp ON m.id = mp.manutencao_id
+        JOIN pecas p ON mp.peca_id = p.id
+        WHERE m.veiculo_id = :veiculo_id
+        ORDER BY m.data DESC;
+
+    Documentos do veículo:
+        SELECT
+            tipo_documento,
+            data_vencimento,
+            status
+        FROM documentos
+        WHERE veiculo_id = :veiculo_id;
+
+    Consulta completa:
+        SELECT
+            v.id AS veiculo_id,
+            v.placa,
+            v.modelo,
+            v.ano,
+            m.id AS manutencao_id,
+            m.data AS data_manutencao,
+            m.tipo AS tipo_manutencao,
+            m.descricao AS descricao_manutencao,
+            m.valor AS valor_manutencao,
+            f.id AS fornecedor_id,
+            f.nome AS fornecedor_nome,
+            p.id AS peca_id,
+            p.nome AS peca_nome,
+            mp.quantidade AS peca_quantidade,
+            mp.valor_unitario AS peca_valor_unitario,
+            d.id AS documento_id,
+            d.tipo_documento,
+            d.data_vencimento,
+            d.status AS documento_status
+        FROM veiculos v
+        LEFT JOIN manutencaos m ON v.id = m.veiculo_id
+        LEFT JOIN fornecedors f ON m.fornecedor_id = f.id
+        LEFT JOIN manupecas mp ON m.id = mp.manutencao_id
+        LEFT JOIN pecas p ON mp.peca_id = p.id
+        LEFT JOIN documentos d ON v.id = d.veiculo_id
+        WHERE v.placa = :placa
+        ORDER BY m.data DESC, d.data_vencimento DESC;
+
+3. Relatório financeiro mensal (gastos com manutenções)
+    Endpoint que recebe período (mês/ano) e retorna o total gasto em manutenções, agrupado por veículo, fornecedor ou tipo de serviço.
+    Exemplo: GET /api/relatorios/financeiro?mes=04&ano=2024
+    Utilizar JOINs e SUM em SQL para calcular os totais.
+
+4. Lista de manutenções recentes, com filtro por veículo
+    Endpoint para listar manutenções, podendo filtrar por veículo, período, fornecedor, etc.
+    Exemplo: GET /api/manutencoes?veiculo_id=1&limit=10
+    Retornar as manutenções mais recentes, com paginação.
+
+5. Cadastro básico de usuários (login simples)
+    Endpoints para criar usuário (POST /api/usuarios), autenticar (POST /api/login) e logout.
+    Armazenar senhas com hash seguro.
+    Retornar token de autenticação (JWT ou sessão) após login.
+
+6. Exportação de relatórios filtrados (Excel/PDF)
+    Endpoints que geram relatórios conforme filtros aplicados e retornam arquivos para download.
+    Exemplo: GET /api/relatorios/manutencoes?formato=excel
+    Utilizar bibliotecas PHP para gerar Excel/PDF (ex: PhpSpreadsheet, Dompdf).
+
+7. Notificações de vencimento de manutenções/documentos
+    Rotina automática (cron job) que verifica documentos/manutenções a vencer e gera notificações.
+    Endpoint para listar notificações do usuário: GET /api/notificacoes
+    Opcional: envio de e-mail ou push.
+
+8. Visualização dos fornecedores mais utilizados e contatos
+    Endpoint que retorna ranking de fornecedores por quantidade de serviços realizados.
+    Exemplo: GET /api/fornecedores/mais-utilizados
+    Retornar também os dados de contato de cada fornecedor.
+
+9. Histórico de peças trocadas por veículo
+    Endpoint que recebe veículo (placa ou id) e retorna todas as peças trocadas, datas, valores, etc.
+    Exemplo: GET /api/veiculos/{id}/pecas-trocadas
+
+10. Dashboard simples com gráficos básicos (gastos, manutenções, veículos ativos)
+    Endpoint que retorna dados agregados para alimentar gráficos do dashboard (ex: total de gastos por mês, quantidade de manutenções, veículos ativos).
+    Exemplo: GET /api/dashboard
+    O frontend consome esses dados e monta os gráficos.
+
+Consultas:
+Gasto total por veículo em um período:
+    SELECT v.placa, SUM(m.valor) AS total_gasto
+    FROM veiculos v
+    JOIN manutencaos m ON v.id = m.veiculo_id
+    WHERE m.data BETWEEN :inicio AND :fim
+    GROUP BY v.placa
+    ORDER BY total_gasto DESC;
+
+Peças mais utilizadas:
+    SELECT p.nome, COUNT(*) AS vezes_usada
+    FROM pecas p
+    JOIN manupecas mp ON p.id = mp.peca_id
+    GROUP BY p.nome
+    ORDER BY vezes_usada DESC
+    LIMIT 10;
+
+Fornecedores mais utilizados:
+    SELECT f.nome, COUNT(*) AS qtd_servicos
+    FROM fornecedors f
+    JOIN manutencaos m ON f.id = m.fornecedor_id
+    GROUP BY f.nome
+    ORDER BY qtd_servicos DESC;
+
+Veículos com documentos a vencer nos próximos 30 dias:
+    SELECT v.placa, d.tipo_documento, d.data_vencimento
+    FROM veiculos v
+    JOIN documentos d ON v.id = d.veiculo_id
+    WHERE d.data_vencimento BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+    ORDER BY d.data_vencimento ASC;
+----------------------------------
+
+1. Tabela de documentos do veículo
+    Por quê?
+        Permite controlar vencimentos de documentos importantes (IPVA, seguro, licenciamento, etc) de cada veículo, facilitando alertas e relatórios.
+    Como ficaria:
+        veiculo_id (chave estrangeira para veículos)
+        tipo_documento (ex: IPVA, seguro)
+        data_vencimento
+        status (ex: válido, vencido, a vencer)
+        arquivo (caminho para upload do documento digitalizado)
+2. Tabela de manutenções agendadas
+    Por quê?
+        Permite registrar manutenções futuras, facilitando o planejamento e o controle preventivo da frota.
+    Como ficaria:
+        veiculo_id (chave estrangeira para veículos)
+        data_prevista (data agendada)
+        tipo_manutencao (ex: troca de óleo, revisão)
+        observacoes (campo livre para detalhes)
+        status (ex: agendada, concluída, cancelada)
+3. Tabela de usuários e permissões
+    Por quê?
+        Permite controlar o acesso ao sistema, definindo diferentes tipos de usuários (admin, operador, consulta), aumentando a segurança e a organização.
+    Como ficaria:
+        nome
+        email (único)
+        senha (armazenada com hash seguro)
+tipo_usuario (ex: admin, operador, consulta)
+4. Tabela de peças utilizadas
+    Por quê?
+        Permite registrar detalhadamente quais peças foram usadas em cada manutenção, facilitando o controle de estoque, custos e histórico de trocas.
+    Como ficaria:
+        manutencao_id (chave estrangeira para manutenções)
+        peca_id (chave estrangeira para peças)
+        quantidade
+        valor_unitario
+5. Tabela de fornecedores: adicionar campo categoria
+    Por quê?
+        Permite classificar fornecedores (ex: oficina, autopeças, borracharia), facilitando filtros, relatórios e análises de eficiência.
+    Como ficaria:
+        nome
+        cnpj
+        contato
+        categoria (ex: oficina, autopeças, etc) [novo campo]
+6. Tabela de histórico de login
+    Por quê?
+        Permite registrar acessos dos usuários, aumentando a segurança e possibilitando auditoria de uso do sistema.
+    Como ficaria:
+        usuario_id (chave estrangeira para usuários)
+        data_hora (data e hora do login/logout)
+        ip (endereço IP do acesso)
+        acao (ex: login, logout, falha)
+
+-----------------------------------------------------------------------------------------------------------------------
+
+1. Upload e Importação de Dados
+    Detalhar etapas do upload:
+        Como o arquivo será enviado (formulário, endpoint, formato aceito).
+        Onde será salvo temporariamente.
+        Como será feita a validação (ex: checar colunas obrigatórias, tipos de dados).
+        O que acontece em caso de erro (ex: mensagem clara, relatório de linhas com erro).
+        Exemplo de resposta de sucesso/erro.
+
+2. Consulta por Placa
+    Fluxo da consulta:
+        Endpoint recebe a placa.
+        Busca o veículo e retorna histórico (manutenções, peças, documentos).
+        Exemplo de resposta JSON.
+        Observação sobre índice no campo placa para performance.
+
+3. Cadastro de Usuário e Login
+    Fluxo básico:
+        Campos obrigatórios no cadastro.
+        Hash de senha (ex: bcrypt).
+        O que retorna após login (token JWT ou sessão).
+        Exemplo de payload de cadastro/login.
+
+4. Cadastro de Documentos do Veículo
+    Detalhar campos:
+        Como será feito o upload do arquivo digitalizado.
+        Onde será salvo o caminho do arquivo.
+        Exemplo de endpoint para cadastro e para listar documentos.
+
+5. Cadastro de Manutenções Agendadas
+    Fluxo:
+        Campos obrigatórios.
+        Status inicial (agendada).
+        Como será feita a alteração de status (ex: concluída, cancelada).
+
+6. Cadastro de Peças Utilizadas
+    Fluxo:
+        Vincular peças a uma manutenção.
+        Campos obrigatórios (quantidade, valor unitário).
+
+7. Cadastro de Fornecedores com Categoria
+    Detalhar:
+        Exemplos de categorias.
+        Como será feito o filtro por categoria.
+
+8. Histórico de Login
+    Fluxo:
+        Quando registrar (login, logout, falha).
+        Campos obrigatórios (usuário, data/hora, IP, ação).

@@ -1,0 +1,260 @@
+Hash - servidor IF:
+f783865c00dd2511e2dfc2d8e7242118bb149960360a62fba243f75b932e6b1c
+
+preventiva
+marca da peça em peças: ver quais duram mais
+compara categorias das peças: ex, original, paralela: ver se o custo e  a durabilidade compensa comprar qual
+provar os gastos para os pretsadores de serviços
+
+TRAZER AS DESCRIÇÕES DAS FUNÇÕES IRIAM FUNCIONAR:
+    - Os dados que serão manipulados
+    - Funções
+
+IDEIAS PARA O SISTEMA DE FROTAS
+---------------------------------------------------
+1. Cadastro e edição de fornecedores, veículos, peças, serviços e usuários.
+2. Consulta avançada de histórico de manutenções por placa, período, fornecedor ou tipo de serviço.
+3. Relatórios financeiros: valor gasto por mês, por veículo, por fornecedor, por tipo de peça/serviço.
+4. Controle de permissões de usuários (admin, operador, consulta, etc).
+5. Exportação de dados para Excel/CSV/PDF.
+6. Dashboard com indicadores (total de manutenções, gastos, veículos ativos, próximos vencimentos, etc).
+7. Notificações de vencimento de manutenção preventiva ou documentos dos veículos.
+8. Upload e armazenamento de documentos (notas fiscais, comprovantes, fotos de peças, etc).
+9. Integração com outros sistemas via API (importação/exportação de dados).
+10. Log de alterações/auditoria: quem alterou o quê e quando.
+11. Busca global por qualquer campo (placa, nome, CNPJ, etc).
+12. Cadastro de tipos de manutenção e peças, com vínculo a fabricantes.
+13. Histórico detalhado de cada veículo, incluindo peças trocadas, serviços realizados e custos.
+14. Controle de estoque de peças (entrada, saída, inventário).
+15. Relatórios de eficiência de fornecedores e custos por km rodado.
+16. Sistema de permissões para aprovações de gastos/manutenções.
+17. Módulo de agendamento de manutenções futuras.
+18. Central de notificações: painel único para visualizar todos os alertas, avisos e pendências do sistema.
+19. Histórico de alterações em registros: visualizar todas as mudanças feitas em um cadastro (quem, quando, o que mudou).
+20. Relacionamento entre registros: vincular manutenções a ocorrências, peças a fornecedores, etc, para navegação cruzada.
+21. Busca avançada com múltiplos filtros combinados (ex: veículo X, fornecedor Y, período Z).
+22. Visualização de dados em mapas: exibir localização dos fornecedores, oficinas ou eventos de manutenção.
+23. Relatórios agendados: permitir que o sistema gere e envie relatórios automaticamente em datas/intervalos definidos.
+24. Painel de pendências: lista de tarefas ou ações que precisam ser tomadas (ex: aprovar manutenção, atualizar documento).
+25. Anotações internas: campo para adicionar observações ou comentários em qualquer registro.
+26. Comparativo de custos: comparar gastos entre veículos, fornecedores ou períodos.
+27. Visualização de vínculos: mostrar, em um clique, todos os registros relacionados a um veículo (manutenções, peças, documentos, etc).
+28. Importação incremental: importar apenas novos dados, evitando duplicidade.
+29. Controle de versões de documentos: manter histórico de versões de arquivos/documentos anexados.
+30. Dashboard personalizável: cada usuário pode escolher quais indicadores e gráficos quer ver na tela inicial.
+31. Integração com calendário: exportar datas de vencimento para Google Calendar/Outlook.
+32. Relatórios de uso do sistema: saber quais usuários mais acessam, quais funções são mais usadas, etc.
+33. Checklist de conformidade: verificar se todos os dados obrigatórios estão preenchidos em cada cadastro.
+
+
+IDEIAS SIMPLES E PRÁTICAS (FOCO: INTEGRAÇÃO COM MINHA FROTA)
+-------------------------------------------------------------
+    1. Importação de dados exportados do Minha Frota (CSV, Excel, JSON).
+    2. Consulta rápida por placa para visualizar histórico do veículo.
+    3. Relatório financeiro mensal (gastos com manutenções).
+    4. Lista de manutenções recentes, com filtro por veículo.
+    5. Cadastro básico de usuários (login simples).
+    6. Exportação de relatórios filtrados (Excel/PDF).
+    7. Notificações de vencimento de manutenções/documentos.
+    8. Visualização dos fornecedores mais utilizados e contatos.
+    9. Histórico de peças trocadas por veículo.
+    10. Dashboard simples com gráficos básicos (gastos, manutenções, veículos ativos).
+
+EXEMPLOS DE CONSULTAS ÚTEIS E ALTERAÇÕES DE BANCO (MINHA FROTA)
+----------------------------------------------------------------
+Consultas úteis:
+    - Histórico completo de manutenções por veículo (placa)
+    - Relatório de gastos por fornecedor
+    - Peças mais trocadas por modelo de veículo
+    - Veículos com maior custo de manutenção no mês/ano
+    - Manutenções agendadas para os próximos 30 dias
+    - Consulta de documentos vencidos ou a vencer (IPVA, seguro, licenciamento)
+    - Resumo de manutenções por tipo (preventiva/corretiva)
+    - Tempo médio entre manutenções por veículo
+
+Sugestões de tabelas/alterações:
+    - Tabela de documentos do veículo: veiculo_id, tipo_documento, data_vencimento, status, arquivo
+    - Tabela de manutenções agendadas: veiculo_id, data_prevista, tipo_manutencao, observacoes, status
+    - Tabela de usuários e permissões: nome, email, senha, tipo_usuario
+    - Tabela de peças utilizadas: manutencao_id, peca_id, quantidade, valor_unitario
+    - Tabela de fornecedores: adicionar campo categoria
+    - Tabela de histórico de login: usuario_id, data_hora, ip, acao
+
+Funcionalidades simples e eficientes:
+    - Filtro por período em todas as consultas
+    - Busca rápida por qualquer campo
+    - Exportação de qualquer consulta para Excel/PDF
+    - Painel inicial com alertas de vencimentos e manutenções pendentes
+    - Cadastro rápido de novos veículos/fornecedores/peças
+    - Visualização de gráficos de gastos por categoria
+
+Exemplos de SQL úteis:
+
+Gasto total por veículo em um período:
+    SELECT v.placa, SUM(m.valor) AS total_gasto
+    FROM veiculos v
+    JOIN manutencaos m ON v.id = m.veiculo_id
+    WHERE m.data BETWEEN :inicio AND :fim
+    GROUP BY v.placa
+    ORDER BY total_gasto DESC;
+
+Peças mais utilizadas:
+    SELECT p.nome, COUNT(*) AS vezes_usada
+    FROM pecas p
+    JOIN manupecas mp ON p.id = mp.peca_id
+    GROUP BY p.nome
+    ORDER BY vezes_usada DESC
+    LIMIT 10;
+
+Fornecedores mais utilizados:
+    SELECT f.nome, COUNT(*) AS qtd_servicos
+    FROM fornecedors f
+    JOIN manutencaos m ON f.id = m.fornecedor_id
+    GROUP BY f.nome
+    ORDER BY qtd_servicos DESC;
+
+Veículos com documentos a vencer nos próximos 30 dias:
+    SELECT v.placa, d.tipo_documento, d.data_vencimento
+    FROM veiculos v
+    JOIN documentos d ON v.id = d.veiculo_id
+    WHERE d.data_vencimento BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+    ORDER BY d.data_vencimento ASC;
+
+SUGESTÕES DE ALTERAÇÕES E MELHORIAS PARA O SISTEMA
+--------------------------------------------------
+1. Estrutura e Organização do Banco de Dados:
+   - Normalização das tabelas para evitar duplicidade de dados.
+   - Relacionamentos claros usando chaves estrangeiras.
+   - Criação de tabelas auxiliares: documentos do veículo, manutenções agendadas, histórico de login, categorias de fornecedores.
+
+2. Backend e API:
+   - Padronização das respostas da API (status, mensagem, dados).
+   - Validação robusta dos dados recebidos.
+   - Tratamento de erros centralizado e mensagens amigáveis.
+   - Endpoints para filtros dinâmicos (período, placa, fornecedor, tipo de serviço, etc).
+
+3. Segurança e Usuários:
+   - Sistema de permissões (admin, operador, consulta).
+   - Armazenamento seguro de senhas (hash).
+   - Logs de acesso e alterações para auditoria.
+
+4. Usabilidade e Experiência do Usuário:
+   - Filtros e buscas rápidas em todas as telas de consulta.
+   - Exportação fácil para Excel/PDF.
+   - Alertas visuais para vencimentos próximos.
+   - Dashboard inicial com indicadores e alertas.
+
+5. Integração e Automação:
+   - Importação facilitada e automatizada dos dados do Minha Frota.
+   - API para integração com outros sistemas.
+   - Backup automático dos dados.
+
+6. Performance e Escalabilidade:
+   - Paginação nas consultas de grandes volumes de dados.
+   - Índices nos campos mais consultados (placa, CNPJ, datas).
+
+7. Outras Melhorias:
+   - Documentação do sistema e das APIs.
+   - Testes automatizados para as principais funções.
+   - Interface responsiva para uso em celulares e tablets.
+
+8. Funcionalidades Avançadas
+    - Histórico visual de manutenções: Linha do tempo ou gráfico mostrando todas as manutenções de cada veículo.
+    - Checklist digital para manutenções: Permite registrar etapas realizadas em cada serviço, garantindo padrão de qualidade.
+    - Controle de quilometragem: Registro automático ou manual da quilometragem a cada manutenção, com alertas para revisões.
+    - Gestão de pneus: Controle de troca, rodízio e vida útil dos pneus de cada veículo.
+    - Gestão de abastecimento: Registro de abastecimentos, consumo médio e custos de combustível.
+    - Módulo de ocorrências: Registro de acidentes, multas, avarias e outros eventos relevantes para cada veículo.
+    - Anexos em manutenções: Permitir anexar fotos, PDFs ou outros documentos diretamente nas ordens de serviço.
+
+9. Usabilidade e Interface
+    - Favoritos/atalhos: Permitir que o usuário marque consultas ou relatórios favoritos para acesso rápido.
+    - Customização de relatórios: Usuário pode escolher colunas e filtros antes de exportar ou visualizar.
+    - Ajuda contextual: Dicas e tutoriais rápidos integrados ao sistema.
+    - Modo escuro: Interface com tema escuro para conforto visual.
+
+10. Segurança e Auditoria
+    - Autenticação em dois fatores (2FA): Para maior segurança no acesso.
+    - Bloqueio automático de sessão: Desconectar usuário após tempo de inatividade.
+    - Permissões detalhadas: Controle granular sobre o que cada tipo de usuário pode ver ou editar.
+
+11. Integração e Expansão
+    - Webhooks: Notificações automáticas para outros sistemas quando certos eventos ocorrem (ex: nova manutenção registrada).
+    - Integração com sistemas de rastreamento: Importar dados de localização e uso dos veículos.
+    - API pública documentada: Para facilitar integrações com parceiros ou apps de terceiros.
+
+12. Performance e Manutenção
+    - Monitoramento de performance: Ferramentas para acompanhar tempo de resposta e uso do sistema.
+    - Logs detalhados de erros: Para facilitar manutenção e suporte.
+    - Ferramenta de atualização automática: Para facilitar deploys e correções.
+
+13. Experiência Mobile
+    - Notificações push: Alertas em tempo real no celular sobre vencimentos ou eventos importantes.
+    - Leitura de QR Code: Para acessar rapidamente o histórico de um veículo ou peça.
+
+14. Inteligência e Automação
+    - Sugestão automática de manutenções: Baseada no histórico e quilometragem.
+    - Análise preditiva de falhas: Usar dados históricos para prever possíveis problemas futuros.
+    - Envio automático de relatórios por e-mail: Relatórios periódicos enviados automaticamente para gestores.
+
+O QUE ANOTAR PARA O BACK-END
+
+1. Modelagem de Dados
+    - Todas as tabelas necessárias (veículos, manutenções, peças, fornecedores, usuários, documentos, etc).
+    - Relacionamentos entre tabelas (ex: um veículo tem muitas manutenções, uma manutenção pode ter várias peças).
+    - Campos obrigatórios e opcionais de cada tabela.
+    - Restrições e validações (ex: placa única, CNPJ válido, datas não podem ser futuras, etc).
+
+2. Funcionalidades/Endpoints da API
+    - CRUD completo para cada entidade (Create, Read, Update, Delete).
+    - Endpoints de consulta avançada (ex: histórico por placa, gastos por período, peças mais trocadas).
+    - Filtros e paginação nas listagens.
+    - Endpoints para upload/download de arquivos (notas fiscais, fotos, documentos).
+    - Endpoints para autenticação e autorização de usuários (login, logout, permissões).
+    - Endpoints para notificações e alertas.
+    - Endpoints para exportação/importação de dados (CSV, Excel, JSON).
+    - Endpoints para relatórios customizados.
+
+3. Regras de Negócio
+    - Quem pode cadastrar, editar ou excluir cada tipo de dado.
+    - Como funcionam as permissões de usuário (admin, operador, consulta, etc).
+    - Regras para vencimento de documentos, agendamento de manutenções, etc.
+    - Lógica para geração de alertas e notificações.
+
+4. Segurança
+    - Hash e sal de senhas.
+    - Proteção contra SQL Injection, XSS, CSRF.
+    - Validação de dados recebidos na API.
+    - Controle de sessões e expiração de tokens.
+    - Logs de acesso e alterações.
+
+5. Performance e Escalabilidade
+    - Paginação e limitação de resultados em consultas.
+    - Índices nos campos mais consultados.
+    - Estratégias de cache (se necessário).
+    - Planejamento para backup e recuperação de dados.
+
+6. Integração
+    - Como será feita a importação dos dados do Minha Frota (formato, frequência, validação).
+    - APIs externas que o sistema pode consumir ou expor.
+    - Webhooks ou notificações para integração com outros sistemas.
+
+7. Automação e Rotinas
+    - Rotinas automáticas de backup.
+    - Rotinas de limpeza de dados antigos (se necessário).
+    - Rotinas de envio de alertas e relatórios periódicos.
+
+8. Documentação
+    - Documentação dos endpoints da API (ex: Swagger/OpenAPI).
+    - Documentação das regras de negócio.
+    - Documentação de como importar/exportar dados.
+
+9. Testes
+    - Testes automatizados para as principais funcionalidades.
+    - Testes de integração entre módulos.
+    - Testes de performance (para grandes volumes de dados).
+
+10. Monitoramento e Logs
+    - Logs de erros e exceções.
+    - Logs de acesso e operações críticas.
+    - Monitoramento de uso e performance do sistema.
